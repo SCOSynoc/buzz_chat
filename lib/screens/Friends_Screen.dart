@@ -1,4 +1,5 @@
 
+import 'package:buzz_chat/widgets/friends_lists.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +19,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
+          centerTitle: true,
+          title: Text("My Friends"),
           bottom: TabBar(
+              isScrollable: true,
               onTap: (value)  {
                 setState(() {
                   _currentIndex = value;
@@ -32,7 +36,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
-              tabs:   [
+              tabs:   const [
                 Tab(
                   text: 'FRIENDS',
                 ),
@@ -48,6 +52,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
               ]
           ),
+        ),
+        body: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+            child: FriendsLists()
         ),
       ),
     );

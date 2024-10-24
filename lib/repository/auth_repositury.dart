@@ -276,10 +276,12 @@ class AuthService extends AuthRepository {
     if(doc.get('friendsRequestList').contains(friendId)) {
       print("THis value true is called or not");
       await _firebase.collection('users').doc(userId).update({'friendsRequestList': FieldValue.arrayRemove([friendId])});
+      await _firebase.collection('users').doc(friendId).update({'friendsRequestList': FieldValue.arrayRemove([userId])});
       return true;
     } else{
       print("THis value  false is called or not");
       await _firebase.collection('users').doc(userId).update({'friendsRequestList': FieldValue.arrayUnion([friendId])});
+      await _firebase.collection('users').doc(friendId).update({'friendsRequestList': FieldValue.arrayUnion([userId])});
       return false;
     }
   }
@@ -288,9 +290,11 @@ class AuthService extends AuthRepository {
     DocumentSnapshot doc = await _firebase.collection("users").doc(userId).get();
     if(doc.get('friendsList').contains(friendId)) {
       await _firebase.collection('users').doc(userId).update({'friendsList': FieldValue.arrayRemove([friendId])});
+      await _firebase.collection('users').doc(friendId).update({'friendsList': FieldValue.arrayRemove([userId])});
       return true;
     } else{
       await _firebase.collection('users').doc(userId).update({'friendsList': FieldValue.arrayUnion([friendId])});
+      await _firebase.collection('users').doc(friendId).update({'friendsList': FieldValue.arrayUnion([userId])});
       return false;
     }
   }

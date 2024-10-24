@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:buzz_chat/repository/Local_storage.dart';
 import 'package:buzz_chat/repository/auth_repositury.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_ip_address/get_ip_address.dart';
 
@@ -24,32 +25,34 @@ class AuthBloc extends Bloc<AuthEvents,AuthStates> {
     on<SendFriendRequest>(_onSendOrCancelFriendRequest);
     on<AcceptFriendRequest>(_onAcceptFriendRequest);
     on<RequestCheckIfAlreadyAFriend>(_onCheckIfAlreadyAFriend);
+    on<CheckIfAlreadyARequestSent>(_onCheckIfAlreadyRequestSent);
+    on<GetFriendRequestList>(_onGetFriendRequestList);
+    on<GetFriendsList>(_onGetFriendsList);
   }
-}
 
- AuthService service = AuthService()..initializeInstances();
- HiveService local = HiveService()..initLocalService();
+  AuthService service = AuthService()..initializeInstances();
+  HiveService local = HiveService()..initLocalService();
 
- Future<Map<String, dynamic>> getIp( ) async{
-   Map<String,dynamic> dataIp = {};
-   try {
-     /// Initialize Ip Address
-     var ipAddress = IpAddress(type: RequestType.json);
+  Future<Map<String, dynamic>> getIp( ) async{
+    Map<String,dynamic> dataIp = {};
+    try {
+      /// Initialize Ip Address
+      var ipAddress = IpAddress(type: RequestType.json);
 
-     /// Get the IpAddress based on requestType.
-     dynamic data = await ipAddress.getIpAddress();
-     // dataIp = json.decode(data);
-     print(data.runtimeType);
-     return data;
-   } on IpAddressException catch (exception) {
-     /// Handle the exception.
-     print(exception.message);
-     return {"error": "", "ip": " "};
-   }
- }
+      /// Get the IpAddress based on requestType.
+      dynamic data = await ipAddress.getIpAddress();
+      // dataIp = json.decode(data);
+      print(data.runtimeType);
+      return data;
+    } on IpAddressException catch (exception) {
+      /// Handle the exception.
+      print(exception.message);
+      return {"error": "", "ip": " "};
+    }
+  }
 
   void _onAnonymousLoginRequest(AnonymousLogin event, Emitter<AuthStates> emit) async {
-   Map<String,dynamic> dataIp = await getIp();
+    Map<String,dynamic> dataIp = await getIp();
     try{
       emit(AuthLoading(loading: true));
       bool done = await service.signInAnonymously();
@@ -80,8 +83,8 @@ class AuthBloc extends Bloc<AuthEvents,AuthStates> {
       bool done = await service.signInUserWithEmailAndPassword(
           email: event.email, password: event.password, name: event.name);
       if(done){
-         await service.saveUserToFirestore(userDeviceIP: dataIp["ip"], gender: event.gender, isOnline: true, isAuthed: true,
-             userName: event.name, userEmail: event.email, );
+        await service.saveUserToFirestore(userDeviceIP: dataIp["ip"], gender: event.gender, isOnline: true, isAuthed: true,
+          userName: event.name, userEmail: event.email, );
         emit(SignUpSuccess());
       }else{
         emit(SignUpFailure());
@@ -98,7 +101,7 @@ class AuthBloc extends Bloc<AuthEvents,AuthStates> {
     try{
       emit(AuthLoading(loading: true));
       bool done = await service.loginUserWithEmailAndPassword(
-          email: event.email, password: event.password,);
+        email: event.email, password: event.password,);
       if(done){
         emit(SignInSuccess());
       }else{
@@ -145,63 +148,100 @@ class AuthBloc extends Bloc<AuthEvents,AuthStates> {
   }
 
   void _updateUserStatus(UpdateUserOnlineStatus event, Emitter<AuthStates> emit)async {
-   try{
-     service.updateUserOnlineStatus(event.isOnline);
-     emit(UserOnlineStatus(isOnline: event.isOnline));
-   }catch(_,__) {
-     emit(UserOnlineStatus(isOnline: false));
-     throw Exception("error $_ and $__");
-   }
-  }
-
-  void _onLogoutSuccess(LogoutRequested event, Emitter<AuthStates> emit) async{
-      local.removeData(key: "userData");
-      local.removeData(key: "isUserGuest");
-      service.logoutCurrentUser();
-      emit(SignOutSuccess());
-  }
-
-  void _onCheckUserGuest(CheckUserIsGuestOrNot event, Emitter<AuthStates> emit) async{
-      String? isGuest = local.getData(key: "isUserGuest",);
-      bool check = json.decode(isGuest ?? "false");
-      print("here check is $check and its ${check.runtimeType}");
-      emit(CheckGuestSuccess(isGuest: check));
-  }
-
-  void _onDeleteGuestUserRequest(DeleteAnonymousCurrentGuestUser event,Emitter<AuthStates> emit )async {
-     bool deleted = await service.deleteGuestUserData();
-     if(deleted){
-       emit(GuestDeletedSuccess(deleted: deleted));
-     }else{
-       emit(GuestDeletedSuccess(deleted: deleted));
-     }
-  }
-
-  void _onGetUserDataFromLocalData(GetUserDataFromLocalData event, Emitter<AuthStates> emit) async {
-     dynamic userData = await local.getData(key: 'userData');
-     Users userDataToShow = Users.fromJson(jsonDecode(userData));
-     emit(LocalCurrentUserDataReceived(user: userDataToShow));
-  }
-
-  void _onSendOrCancelFriendRequest(SendFriendRequest event, Emitter<AuthStates> emit) async{
-   print("The event called this is great ${event.friendId} and ${event.userId}");
-       bool sentOrCancel = await service.sendOrCancelFriendRequest(event.userId, event.friendId);
-       if(sentOrCancel){
-         emit(FriendRequestSent(alreadySent: sentOrCancel));
-       }else{
-         emit(FriendRequestSent(alreadySent: sentOrCancel));
-       }
-  }
-
-  void _onAcceptFriendRequest(AcceptFriendRequest event, Emitter<AuthStates> emit)async {
-    bool acceptOrReject = await service.acceptOrRejectFriendRequest(event.userId, event.friendId);
-    if(acceptOrReject){
-      emit(RequestAccepted(acceptOrReject: acceptOrReject));
-    }else{
-      emit(RequestAccepted(acceptOrReject: acceptOrReject));
+    try{
+      service.updateUserOnlineStatus(event.isOnline);
+      emit(UserOnlineStatus(isOnline: event.isOnline));
+    }catch(_,__) {
+      emit(UserOnlineStatus(isOnline: false));
+      throw Exception("error $_ and $__");
     }
   }
 
-  void _onCheckIfAlreadyAFriend(RequestCheckIfAlreadyAFriend event, Emitter<AuthStates> emit) async {
-   bool done = await service.checkIfAlreadyAFriend(event.userId, event.friendId);
+  void _onLogoutSuccess(LogoutRequested event, Emitter<AuthStates> emit) async{
+    local.removeData(key: "userData");
+    local.removeData(key: "isUserGuest");
+    service.logoutCurrentUser();
+    emit(SignOutSuccess());
   }
+
+  void _onCheckUserGuest(CheckUserIsGuestOrNot event, Emitter<AuthStates> emit) async{
+    String? isGuest = local.getData(key: "isUserGuest",);
+    bool check = json.decode(isGuest ?? "false");
+    print("here check is $check and its ${check.runtimeType}");
+    emit(CheckGuestSuccess(isGuest: check));
+  }
+
+  void _onDeleteGuestUserRequest(DeleteAnonymousCurrentGuestUser event,Emitter<AuthStates> emit )async {
+    bool deleted = await service.deleteGuestUserData();
+    if(deleted){
+      emit(GuestDeletedSuccess(deleted: deleted));
+    }else{
+      emit(GuestDeletedSuccess(deleted: deleted));
+    }
+  }
+
+  void _onGetUserDataFromLocalData(GetUserDataFromLocalData event, Emitter<AuthStates> emit) async {
+    dynamic userData = await local.getData(key: 'userData');
+    Users userDataToShow = Users.fromJson(jsonDecode(userData));
+    emit(LocalCurrentUserDataReceived(user: userDataToShow));
+  }
+
+  void _onSendOrCancelFriendRequest(SendFriendRequest event, Emitter<AuthStates> emit) async{
+    print("The event called this is great ${event.friendId} and ${event.userId}");
+    bool sentOrCancel = await service.sendOrCancelFriendRequest(event.userId, event.friendId);
+      print("The value in _onSendOrCancelFriendRequest :: () :: $sentOrCancel");
+    emit(AuthLoading(loading: true));
+    if(sentOrCancel){
+      emit(FriendRequestSent(alreadySent: sentOrCancel));
+      emit(AuthLoading(loading: false));
+    }else{
+      emit(FriendRequestSent(alreadySent: sentOrCancel));
+      emit(AuthLoading(loading: false));
+    }
+    /// To update text  state to 'add Friend' on chat screen we are calling this function
+    add(CheckIfAlreadyARequestSent(friendId: event.friendId, userId: event.userId));
+  }
+
+
+
+  void _onAcceptFriendRequest(AcceptFriendRequest event, Emitter<AuthStates> emit)async {
+    bool acceptOrReject = await service.acceptOrRejectFriendRequest(event.userId, event.friendId);
+    emit(AuthLoading(loading: true));
+    if(acceptOrReject){
+      emit(RequestAccepted(acceptOrReject: acceptOrReject));
+      emit(AuthLoading(loading: false));
+    }else{
+      emit(RequestAccepted(acceptOrReject: acceptOrReject));
+      emit(AuthLoading(loading: false));
+    }
+  }
+
+
+  void _onCheckIfAlreadyAFriend(RequestCheckIfAlreadyAFriend event, Emitter<AuthStates> emit) async {
+    bool done = await service.checkIfAlreadyAFriend(event.userId, event.friendId);
+    if(done) {
+      emit(AlreadyAFriend(alreadyFriend: done));
+    }else{
+      emit(AlreadyAFriend(alreadyFriend: done));
+    }
+  }
+
+
+  void _onCheckIfAlreadyRequestSent(CheckIfAlreadyARequestSent event, Emitter<AuthStates> emit) async {
+    bool done = await service.checkIfAFriendRequestSentOrNot(event.userId, event.friendId);
+    if(done) {
+      emit(FriendRequestSent(alreadySent: done));
+    }else{
+      emit(FriendRequestSent(alreadySent: done));
+    }
+  }
+
+  void _onGetFriendRequestList(GetFriendRequestList event, Emitter<AuthStates> emit) async {
+
+  }
+
+  void _onGetFriendsList(GetFriendsList event, Emitter<AuthStates> emit) async {
+
+  }
+}
+

@@ -47,7 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
 
 
-
+  String text = "Add Friend";
+  bool isLoading = false;
 
   Stream<List<Message>> msgList = Stream.value([]);
 
@@ -76,11 +77,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
    print("in chat screen initState():: ${widget.randomJoinedGuest?.gender} and ${widget.randomJoinedUser?.userName}");
+   context.read<AuthBloc>().add(RequestCheckIfAlreadyAFriend(friendId: widget.randomUserId, userId: widget.currentUserId));
    context.read<MessageBlocs>().add(GetMessagesRequested(
        userUid: widget.currentUserId,
        messageUid: "",
        receiverId: widget.randomUserId, chatRoomId: widget.chatRoomID));
-    super.initState();
+   context.read<AuthBloc>().add(CheckIfAlreadyARequestSent(friendId: widget.randomUserId, userId: widget.currentUserId));
+   super.initState();
 
   }
 
@@ -126,10 +129,10 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Scaffold(
             backgroundColor: Colors.black,
             appBar: AppBar(
-              title: Row(
+              title: const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Anonymous chat"),
+                  Text("Anonymous chat"),
 
                 ],
               ),
@@ -152,23 +155,44 @@ class _ChatScreenState extends State<ChatScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TextButton(onPressed: (){
+                    /*TextButton(onPressed: (){
                       // context.read<MessageBlocs>().add(SaveChatsRequest(chatRoomID: widget.chatRoomID));
-                    },  child: const Text('Stop Chat'),),
+                      context.read<MessageBlocs>().add(DeleteChatRoomRequest(chatRoomID: widget.chatRoomID));
+                    },  child: const Text('Stop Chat'),),*/
+
                     BlocBuilder<AuthBloc,AuthStates>(
                       builder: (context,state) {
-                        String text = "Add Friend";
-                        if(state is FriendRequestSent) {
-                          setState(() {
-                            text = state.alreadySent ? "Cancel Request": "Add Friend";
-                          });
-
-                        }
                         return TextButton(onPressed: (){
-                          context.read()<AuthBloc>().add(
-                              SendFriendRequest(friendId: widget.randomUserId, userId: widget.currentUserId)
-                          );
-                        },  child: Text(text),
+                             context.read<AuthBloc>().add(
+                                 SendFriendRequest(friendId: widget.randomUserId, userId: widget.currentUserId)
+                             );
+                        },  child: BlocListener<AuthBloc,AuthStates>(
+                            listener: (BuildContext context, state) {
+                              if(state is AlreadyAFriend) {
+                                setState(() {
+                                  text = state.alreadyFriend ? "Cancel Request": "Add Friend";
+                                  print('Here in front end chat screen in AlreadyAFriend - $text '
+                                      'and state condition is ${state.alreadyFriend}');
+                                });
+                              }
+
+                              if(state is AuthLoading) {
+                                setState(() {
+                                  isLoading = state.loading;
+                                  print('Here in front end chat screen in AuthLoading - $text ');
+                                });
+                              }
+                              if(state is FriendRequestSent) {
+                                setState(() {
+                                  text = state.alreadySent? "Cancel Request": "Add Friend";
+                                  print('Here in front end chat screen in FriendRequestSent - $text '
+                                      'and state condition is ${state.alreadySent}');
+                                });
+                              }
+                            },
+                            child: isLoading ? const CircularProgressIndicator.adaptive():Text(text)
+
+                        ),
                         );
                       }
                     ),

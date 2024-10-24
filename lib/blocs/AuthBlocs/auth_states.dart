@@ -69,7 +69,18 @@ class RequestAccepted extends AuthStates {
   RequestAccepted({required this.acceptOrReject});
 }
 
+
+
 class AlreadyAFriend extends AuthStates {
-  final bool acceptOrReject;
-  AlreadyAFriend({required this.acceptOrReject});
+  final bool alreadyFriend;
+  AlreadyAFriend({required this.alreadyFriend});
+}
+
+
+
+class FriendsListFetched extends AuthStates {
+
+  final List<Users> friendsList;
+  FriendsListFetched({required this.friendsList});
+
 }

@@ -70,4 +70,28 @@ class RequestCheckIfAlreadyAFriend extends AuthEvents {
   RequestCheckIfAlreadyAFriend({required this.friendId,required this.userId});
 }
 
+class CheckIfAlreadyARequestSent extends AuthEvents {
+  final String userId;
+  final String friendId;
+  CheckIfAlreadyARequestSent({required this.friendId,required this.userId});
+}
+
+class GetFriendRequestList extends AuthEvents {
+  final String currentUserID;
+  GetFriendRequestList({required this.currentUserID});
+}
+
+class GetFriendsList extends AuthEvents {
+  final String currentUserID;
+  GetFriendsList({required this.currentUserID});
+}
+
+class GetSentRequestList extends AuthEvents {
+  final String currentUserID;
+  GetSentRequestList({required this.currentUserID});
+}
+
+
+
+
 
